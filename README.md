@@ -25,7 +25,8 @@ Downloading ━━━━━━━━━━━━━━━━━━━━━━�
 ## Install
 
 ```bash
-pip install -e .          # from a clone of this repo
+git clone https://github.com/kazim-45/HAUL-FETCH.git
+pip install -e .          
 # or, once published:
 pip install haul-cli
 ```
