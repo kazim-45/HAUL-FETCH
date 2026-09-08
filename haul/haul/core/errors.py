@@ -88,10 +88,11 @@ class DownloadError(HaulError):
 
 
 class FFmpegMissing(HaulError):
-    reason = "FFmpeg is required for this operation but was not found on PATH."
+    reason = "FFmpeg is required for this operation, and none could be found."
     suggestions = [
-        "Install FFmpeg: https://ffmpeg.org/download.html",
-        "Make sure the 'ffmpeg' command is on your PATH.",
+        "This shouldn't normally happen — HAUL bundles FFmpeg automatically via the 'imageio-ffmpeg' dependency.",
+        "Try: pip install --force-reinstall imageio-ffmpeg",
+        "As a fallback, a system FFmpeg install also works: https://ffmpeg.org/download.html",
     ]
 
 

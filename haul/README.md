@@ -30,21 +30,30 @@ pip install -e .          # from a clone of this repo
 pip install haul-cli
 ```
 
-Requires **Python 3.10+**. A system install of
-**[FFmpeg](https://ffmpeg.org/download.html)** on your `PATH` is recommended
-but optional: some platforms (notably YouTube at 1080p and above) serve
-video and audio as separate streams that need FFmpeg to combine. If FFmpeg
-isn't installed, HAUL automatically falls back to the best quality that
-already includes audio, with a note explaining why:
+Requires **Python 3.10+**. That's it — FFmpeg is bundled automatically via
+the [`imageio-ffmpeg`](https://pypi.org/project/imageio-ffmpeg/) dependency,
+which ships a real, statically-linked FFmpeg binary inside its
+platform-specific wheel (Windows, macOS Intel/ARM, Linux x86_64). It comes
+down with the normal `pip install` step above — nothing to visit
+ffmpeg.org for, nothing to add to `PATH`, no separate install.
+
+FFmpeg is needed for two things: merging separately-delivered video and
+audio streams (some platforms — notably YouTube at 1080p and above — serve
+these separately), and `--audio` on a platform that doesn't expose a
+standalone audio stream. Both work out of the box now.
+
+On the rare system where the bundled binary can't be used for some reason,
+HAUL falls back to a system FFmpeg install on `PATH` if one exists, and
+otherwise falls back to the best quality that already includes audio
+(skipping the platforms/qualities that need a merge), with a note explaining
+why:
 
 ```
 ⚠ FFmpeg not found — using 720p (audio included) instead of 1080p (would need FFmpeg to merge audio).
 ```
 
 It only fails outright if no audio-included quality exists at all — and it
-checks this *before* downloading anything, not after. `--audio` on a
-platform with no standalone audio stream also needs FFmpeg, to extract the
-audio track from a downloaded video.
+checks this *before* downloading anything, not after.
 
 ## Usage
 
@@ -146,7 +155,8 @@ haul/
 │   ├── registry.py          # maps a URL to the right extractor
 │   ├── extractor.py         # MediaInfo / MediaFormat / Extractor
 │   ├── selector.py          # quality ranking — never upscales
-│   ├── downloader.py        # streaming, resume, atomic writes, FFmpeg
+│   ├── downloader.py        # streaming, resume, atomic writes
+│   ├── ffmpeg.py             # resolves the bundled/system FFmpeg binary
 │   ├── metadata.py          # optional JSON sidecar writer
 │   ├── pipeline.py          # wires the above together per URL
 │   └── errors.py            # one exception hierarchy, human-readable

@@ -20,6 +20,7 @@ dependencies = [
     "requests>=2.31",
     "rich>=13.7",
     "yt-dlp>=2024.8.6",
+    "imageio-ffmpeg>=0.5",
     "tomli>=2.0; python_version < '3.11'",
 ]
 

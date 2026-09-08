@@ -13,7 +13,6 @@ Reliability requirements implemented here, straight from spec §30:
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 import time
 from dataclasses import dataclass
@@ -24,6 +23,7 @@ import requests
 
 from ..utils.network import build_session
 from . import errors
+from .ffmpeg import ffmpeg_available, resolve_ffmpeg_path
 
 DuplicatePolicy = Literal["ask", "force", "skip"]
 
@@ -41,10 +41,6 @@ class ProgressEvent:
 
 ProgressCallback = Callable[[ProgressEvent], None]
 DuplicatePrompt = Callable[[Path], str]  # returns "skip" | "overwrite" | "rename"
-
-
-def ffmpeg_available() -> bool:
-    return shutil.which("ffmpeg") is not None
 
 
 def _next_available_name(path: Path) -> Path:
@@ -201,12 +197,15 @@ class Downloader:
 
     def merge_audio_video(self, video_path: Path, audio_path: Path, output_path: Path) -> Path:
         """Muxes a separately-downloaded video and audio stream into
-        one file via the system FFmpeg. Never invoked through a
-        shell — arguments are passed as an array (spec §31)."""
-        if not ffmpeg_available():
+        one file via FFmpeg (the bundled binary if available,
+        otherwise a system install — see core/ffmpeg.py). Never
+        invoked through a shell — arguments are passed as an array
+        (spec §31)."""
+        ffmpeg_path = resolve_ffmpeg_path()
+        if ffmpeg_path is None:
             raise errors.FFmpegMissing()
         cmd = [
-            "ffmpeg", "-y",
+            ffmpeg_path, "-y",
             "-i", str(video_path),
             "-i", str(audio_path),
             "-c", "copy",
@@ -226,14 +225,15 @@ class Downloader:
         ``--audio`` on platforms that don't expose a standalone audio
         stream). Tries a fast stream copy first, falls back to a
         re-encode if the container doesn't support it."""
-        if not ffmpeg_available():
+        ffmpeg_path = resolve_ffmpeg_path()
+        if ffmpeg_path is None:
             raise errors.FFmpegMissing()
 
-        copy_cmd = ["ffmpeg", "-y", "-i", str(input_path), "-vn", "-acodec", "copy", str(output_path)]
+        copy_cmd = [ffmpeg_path, "-y", "-i", str(input_path), "-vn", "-acodec", "copy", str(output_path)]
         result = subprocess.run(copy_cmd, capture_output=True, text=True)
         if result.returncode != 0:
             reencode_cmd = [
-                "ffmpeg", "-y", "-i", str(input_path),
+                ffmpeg_path, "-y", "-i", str(input_path),
                 "-vn", "-acodec", "aac", "-b:a", "128k", str(output_path),
             ]
             result = subprocess.run(reencode_cmd, capture_output=True, text=True)
